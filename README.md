@@ -1,6 +1,6 @@
 # CODVUNS - Code Vulnerability Scanner
 
-Olá! Estou desenvolvendo um scanner de vulnerabilidades para código fonte desenvolvido como TCC. No momento o código ainda está sendo construído, logo está em constante atualização.
+Olá! Estou desenvolvendo um scanner de vulnerabilidades para código fonte. No momento o código ainda está sendo construído, logo está em constante atualização.
 
 
 ## Estrutura do Projeto
