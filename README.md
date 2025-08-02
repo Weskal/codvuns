@@ -6,7 +6,7 @@ Um scanner de vulnerabilidades para código fonte desenvolvido como TCC.
 
 1. Execute o script de setup:
 ```bash
-bash setup_codvuns_fixed.sh
+bash setup_codvuns.sh
 ```
 
 2. Ative o ambiente virtual:
