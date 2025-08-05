@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Optional, Any, Callable
+from typing import List, Dict, Optional, Any
 import json
 from pathlib import Path
 
@@ -92,15 +92,12 @@ class Rule:
     # Metadados
     metadata: RuleMetadata = field(default_factory=RuleMetadata)
     
-    # Função customizada de análise (opcional)
-    custom_analyzer: Optional[Callable] = field(default=None, repr=False)
-    
     def __post_init__(self):
         """Validações após inicialização"""
         if not self.id:
             raise ValueError("Rule ID é obrigatório")
-        if not self.patterns and not self.custom_analyzer:
-            raise ValueError("Rule deve ter patterns ou custom_analyzer")
+        if not self.patterns:
+            raise ValueError("Rule deve ter pelo menos um pattern")
         
         # Converte strings para enums se necessário
         if isinstance(self.severity, str):
@@ -179,7 +176,7 @@ class Rule:
 
 
 class RuleEngine:
-    """Engine para gerenciar regras - SEM lógica de análise"""
+    """Engine para gerenciar regras - SEM lógica de carregamento duplicada"""
     
     def __init__(self):
         self.rules: Dict[str, Rule] = {}
@@ -215,8 +212,51 @@ class RuleEngine:
         
         return applicable_rules
     
-    def load_rules_from_directory(self, directory_path: str) -> int:
-        """Carrega regras de arquivos YAML/JSON em um diretório"""
+    def load_builtin_rules(self) -> int:
+        """
+        Carrega regras padrão usando RuleLoader
+        """
+        try:
+            from ..utils.rule_loader import RuleLoader
+            loader = RuleLoader()
+            rules = loader.load_builtin_rules()
+            
+            loaded_count = 0
+            for rule in rules:
+                self.add_rule(rule)
+                loaded_count += 1
+            
+            return loaded_count
+            
+        except Exception as e:
+            print(f"❌ Erro ao carregar regras padrão: {e}")
+            return 0
+    
+    # Refatorado --> Agora utilizando apenas o rule_loader
+    def load_rules_from_directory(self, directory_path: Optional[str] = None) -> int:
+        try:
+            from ..utils.rule_loader import RuleLoader
+            loader = RuleLoader(directory_path)
+            rules = loader.load_rules_from_directory()
+            
+            loaded_count = 0
+            for rule in rules:
+                self.add_rule(rule)
+                loaded_count += 1
+            
+            return loaded_count
+            
+        except ImportError:
+            # Fallback se RuleLoader não estiver disponível
+            print("⚠️  RuleLoader não disponível, usando carregamento básico")
+            return self._load_rules_basic(directory_path or "src/rules")
+        except Exception as e:
+            print(f"❌ Erro ao carregar regras: {e}")
+            return 0
+    
+    # Fallback caso o rule_loader não funcione
+    def _load_rules_basic(self, directory_path: str) -> int:
+        """Método de fallback (carregamento básico)"""
         loaded_count = 0
         directory = Path(directory_path)
         
@@ -244,22 +284,26 @@ class RuleEngine:
         
         return loaded_count
     
-    def export_rules_to_directory(self, directory_path: str) -> int:
-        """Exporta regras para arquivos JSON"""
-        directory = Path(directory_path)
-        directory.mkdir(exist_ok=True)
-        
-        exported_count = 0
-        for rule in self.rules.values():
-            file_path = directory / f"{rule.id}.json"
-            try:
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write(rule.to_json())
-                exported_count += 1
-            except Exception as e:
-                print(f"Erro ao exportar regra {rule.id}: {e}")
-        
-        return exported_count
+    def save_rules(self, directory_path: str, format_type: str = "json") -> int:
+        """
+        Salva regras usando RuleLoader
+        """
+        try:
+            from ..utils.rule_loader import RuleLoader
+            loader = RuleLoader()
+            rules_list = list(self.rules.values())
+            
+            success = loader.save_rules_to_directory(
+                rules_list, 
+                directory_path, 
+                format_type
+            )
+            
+            return len(rules_list) if success else 0
+            
+        except Exception as e:
+            print(f"❌ Erro ao salvar regras: {e}")
+            return 0
     
     def get_stats(self) -> Dict[str, Any]:
         """Obtém estatísticas das regras"""
@@ -293,152 +337,18 @@ class RuleEngine:
         }
 
 
-# Factory functions para criar regras comuns (REMOVIDAS - agora estão em JSON)
-# Essas funções foram movidas para src/rules/example_rules.json para maior flexibilidade
-
+# Factory functions simplificadas
 def create_rule_from_dict(rule_data: Dict[str, Any]) -> Rule:
     """Factory function genérica para criar regra a partir de dicionário"""
     return Rule.from_dict(rule_data)
 
 
-def create_default_ruleset() -> List[Rule]:
+def create_engine_with_default_rules() -> RuleEngine:
     """
-    Carrega conjunto padrão de regras do arquivo JSON
-    DEPRECATED: Use RuleLoader.load_builtin_rules() instead
+    Cria RuleEngine com regras padrão carregadas
     """
-    import json
-    from pathlib import Path
-    
-    # Localiza arquivo de regras padrão
-    current_dir = Path(__file__).parent
-    rules_file = current_dir.parent / "rules" / "example_rules.json"
-    
-    if not rules_file.exists():
-        print(f"⚠️  Arquivo de regras não encontrado: {rules_file}")
-        return []
-    
-    try:
-        with open(rules_file, 'r', encoding='utf-8') as f:
-            rules_data = json.load(f)
-        
-        rules = []
-        for rule_data in rules_data:
-            try:
-                rule = Rule.from_dict(rule_data)
-                rules.append(rule)
-            except Exception as e:
-                print(f"⚠️  Erro ao carregar regra {rule_data.get('id', 'unknown')}: {e}")
-        
-        return rules
-        
-    except Exception as e:
-        print(f"❌ Erro ao carregar regras padrão: {e}")
-        return []
-    
-def get_rule(self, rule_id: str) -> Optional[Rule]:
-    """Obtém uma regra por ID"""
-    return self.rules.get(rule_id)
+    engine = RuleEngine()
+    engine.load_builtin_rules()
+    return engine
 
-def get_rules_by_category(self, category: VulnerabilityCategory) -> List[Rule]:
-    """Obtém regras por categoria"""
-    return [rule for rule in self.rules.values() if rule.category == category]
-
-def get_rules_for_file(self, file_path: str, file_language: str) -> List[Rule]:
-    """Obtém regras aplicáveis a um arquivo específico"""
-    applicable_rules = []
-    for rule in self.rules.values():
-        if (rule.enabled and 
-            rule.category in self.enabled_categories and
-            rule.matches_file(file_path, file_language)):
-            applicable_rules.append(rule)
-    
-    return applicable_rules
-
-def analyze_file_content(self, content: str, file_path: str, 
-                        file_language: str) -> Dict[str, List[RuleMatch]]:
-    """Analisa conteúdo de arquivo com todas as regras aplicáveis"""
-    results = {}
-    applicable_rules = self.get_rules_for_file(file_path, file_language)
-    
-    for rule in applicable_rules:
-        matches = rule.analyze_content(content, file_path)
-        if matches:
-            results[rule.id] = matches
-    
-    return results
-
-def load_rules_from_directory(self, directory_path: str) -> int:
-    """Carrega regras de arquivos YAML/JSON em um diretório"""
-    loaded_count = 0
-    directory = Path(directory_path)
-    
-    if not directory.exists():
-        return 0
-    
-    for file_path in directory.glob("*.yaml"):
-        try:
-            # Implementar carregamento YAML aqui
-            pass
-        except Exception as e:
-            print(f"Erro ao carregar regra de {file_path}: {e}")
-    
-    for file_path in directory.glob("*.json"):
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                rule_data = json.load(f)
-                rule = Rule.from_dict(rule_data)
-                self.add_rule(rule)
-                loaded_count += 1
-        except Exception as e:
-            print(f"Erro ao carregar regra de {file_path}: {e}")
-    
-    return loaded_count
-
-def export_rules_to_directory(self, directory_path: str) -> int:
-    """Exporta regras para arquivos JSON"""
-    directory = Path(directory_path)
-    directory.mkdir(exist_ok=True)
-    
-    exported_count = 0
-    for rule in self.rules.values():
-        file_path = directory / f"{rule.id}.json"
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(rule.to_json())
-            exported_count += 1
-        except Exception as e:
-            print(f"Erro ao exportar regra {rule.id}: {e}")
-    
-    return exported_count
-
-def get_stats(self) -> Dict[str, Any]:
-    """Obtém estatísticas das regras"""
-    total_rules = len(self.rules)
-    enabled_rules = sum(1 for rule in self.rules.values() if rule.enabled)
-    
-    category_stats = {}
-    severity_stats = {}
-    type_stats = {}
-    
-    for rule in self.rules.values():
-        # Por categoria
-        cat = rule.category.value
-        category_stats[cat] = category_stats.get(cat, 0) + 1
-        
-        # Por severidade
-        sev = rule.severity.value
-        severity_stats[sev] = severity_stats.get(sev, 0) + 1
-        
-        # Por tipo
-        typ = rule.rule_type.value
-        type_stats[typ] = type_stats.get(typ, 0) + 1
-    
-    return {
-        'total_rules': total_rules,
-        'enabled_rules': enabled_rules,
-        'disabled_rules': total_rules - enabled_rules,
-        'by_category': category_stats,
-        'by_severity': severity_stats,
-        'by_type': type_stats
-    }
-
+engine = create_engine_with_default_rules()
