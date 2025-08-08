@@ -14,7 +14,7 @@ try:
 except ImportError:
     YAML_AVAILABLE = False
 
-from ..models.rule import Rule, RuleEngine, create_default_ruleset
+from ..models.rule import Rule, RuleEngine, create_engine_with_default_rules
 
 
 class RuleLoader:
@@ -227,9 +227,9 @@ class RuleLoader:
                     seen_ids.add(rule.id)
                 
                 # Verifica se tem patterns ou custom_analyzer
-                if not rule.patterns and not rule.custom_analyzer:
+                if not rule.patterns:
                     validation_result['errors'].append(
-                        f"Regra {rule.id} não tem patterns nem custom_analyzer"
+                        f"Regra {rule.id} não tem patterns"
                     )
                 
                 # Warnings para regras sem metadados importantes

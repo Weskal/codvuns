@@ -128,7 +128,7 @@ class Finding:
     
     @property 
     def is_high_priority(self)-> bool:
-        """Propriedade que verifica se a 'anomalia' é de gravidade alta ou crítica"""
+        """Propriedade que verifica se a vulnerabilidade é alta ou crítica"""
         return self.severity in [Severity.CRITICAL, Severity.HIGH]
     
     
