@@ -41,3 +41,6 @@ reports/*.json
 reports/*.csv
 config/local_settings.py
 .env
+
+#for now
+docs/*md

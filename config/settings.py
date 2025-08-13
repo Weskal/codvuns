@@ -349,8 +349,6 @@ class ConfigManager:
             'exclusions_count': len(config.get('exclusions', {}).get('directories', []))
         }
 
-
-# Factory function para uso fácil
 def get_config_manager(config_dir: Optional[str] = None) -> ConfigManager:
     """Cria ou retorna instância do ConfigManager"""
     return ConfigManager(config_dir)
