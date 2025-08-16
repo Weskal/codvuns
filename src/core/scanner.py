@@ -1,3 +1,4 @@
+# Imports gerais
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, field
@@ -291,7 +292,7 @@ class Scanner:
             findings=findings
         )
         
-        # Score é calculado automaticamente pelo report via SecurityScoreCalculator
+        # Score é calculado automaticamente pelo report em SecurityScoreCalculator
 
         self.logger.info(f"Relatório gerado: Score {report.summary.security_score:.1f}/100")
         
