@@ -295,3 +295,118 @@ class PythonASTVisitor(ast.NodeVisitor):
         except:
             return ""
 
+class PythonAnalyzer(BaseAnalyzer):
+    """
+    Analyzer específico para códigos Python.
+    
+    Combina análise regex com análise AST, combinando eficiência e profundidade para 
+    detectar vulnerabilidades de segurança de forma eficaz e eficiente em código Python.
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.logger = logging.getLogger(__name__)
+        
+        # Padrões regex
+        self.regex_patterns = {
+            "SQL_INJECTION_REGEX": {
+                "patterns": [
+                    r'(?:execute|query)\s*\(\s*["\'][^"\']*["\']?\s*\+',
+                    r'(?:execute|query)\s*\(\s*f["\'][^"\']*\{[^}]+\}',
+                    r'cursor\.execute\s*\(\s*["\'][^"\']*["\']?\s*%',
+                    r'SELECT\s+.*\+.*FROM',
+                    r'INSERT\s+.*\+.*VALUES'
+                ],
+                "severity": Severity.HIGH,
+                "message": "Possível SQL injection detectado via regex",
+                "category": "injection"
+            },
+            "COMMAND_INJECTION_REGEX": {
+                "patterns": [
+                    r'os\.system\s*\(\s*["\'][^"\']*["\']?\s*\+',
+                    r'subprocess\.(call|run|Popen)\s*\(\s*["\'][^"\']*["\']?\s*\+',
+                    r'os\.popen\s*\(\s*["\'][^"\']*["\']?\s*\+',
+                    r'shell=True.*\+'
+                ],
+                "severity": Severity.CRITICAL,
+                "message": "Possível command injection detectado via regex",
+                "category": "injection"
+            },
+            "HARDCODED_SECRETS_REGEX": {
+                "patterns": [
+                    r'(?i)password\s*=\s*["\'][^"\']{6,}["\']',
+                    r'(?i)api[_-]?key\s*=\s*["\'][^"\']{10,}["\']',
+                    r'(?i)secret[_-]?key\s*=\s*["\'][^"\']{10,}["\']',
+                    r'(?i)token\s*=\s*["\'][^"\']{20,}["\']',
+                    r'(?i)auth[_-]?token\s*=\s*["\'][^"\']{15,}["\']'
+                ],
+                "severity": Severity.MEDIUM,
+                "message": "Possível credencial hardcoded detectada via regex",
+                "category": "hardcoded_secrets"
+            }
+        }
+        
+    def get_supported_languages(self) -> List[str]:
+        """Retorna as linguagens suportadas pelo analyzer"""
+        return ["python"]
+    
+    def get_supported_extensions(self) -> List[str]:
+        """Retorna extensões de arquivo suportadas"""
+        return [".py",".pyw"]
+    
+    def analyze(self, file_path: str, rules: List, config: Any) -> List[Finding]:
+        """
+        Executa análise completa no arquivo Python.
+        
+        Combina as análises regex + AST.
+        
+        Args:
+            file_path: Caminh do arquivo Python
+            rules: Lista de regras aplicáveis
+            config: Configurações de análise
+            
+        Returns:
+            Lista de vulnerabilidades encontradas
+        """
+        
+        findings = []
+        
+        try:
+            # Lê o conteúdo do arquivo
+            
+            content = self.read_files(file_path)
+            if not content:
+                self.logger.warning(f"Não foi possível ler arquivo {file_path}")
+                return findings
+            
+            self.logger.debug(f"Analisando arquivo Python: {file_path}")
+            
+            # 1 - Análise Regex (rápida porém simples)
+            regex_findings = self._analyze_with_reget(file_path, content, rules)
+            findings.extend(regex_findings)
+            
+            # 2 - Análise AST (lenta porém profunda)
+            ast_findings = self._analyze_with_ast(file_path, content, rules)
+            findings.extend(ast_findings)
+            
+            # 3 - Junção das análises + tratamento para remoção de duplicatas nos dados
+            findings = self._remove_duplicate_findings(findings)
+            
+            self.logger.info(f"Análise concluída: {len(findings)} vulnerabilidades encontradas em {file_path}")     
+        
+        except Exception as e:
+            self.logger.error(f"Erro durante análise de {file_path}: {e}")           
+            
+            # Cria finding de erro para tracking
+            error_finding = Finding(
+                file_path=file_path,
+                line_number=1,
+                rule_id="ANALYSIS_ERROR",
+                severity=Severity.INFO,
+                message=f"Erro durante análise: {str(e)}",
+                category="error"
+            )
+            findings.append(error_finding)
+        
+        return findings
+            
