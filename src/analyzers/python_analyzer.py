@@ -382,7 +382,7 @@ class PythonAnalyzer(BaseAnalyzer):
             self.logger.debug(f"Analisando arquivo Python: {file_path}")
             
             # 1 - Análise Regex (rápida porém simples)
-            regex_findings = self._analyze_with_reget(file_path, content, rules)
+            regex_findings = self._analyze_with_regex(file_path, content, rules)
             findings.extend(regex_findings)
             
             # 2 - Análise AST (lenta porém profunda)
@@ -409,4 +409,154 @@ class PythonAnalyzer(BaseAnalyzer):
             findings.append(error_finding)
         
         return findings
+    
+    def _analyze_with_regex(self, file_path: str, content: str, rules: List) -> List[Finding]:
+        """Executa análise baseada em regex"""
+        findings = []
+        lines = content.splitlines()
+        
+        try:
+            for rule_id, rule_config in self.regex_patterns.items():
+                for pattern in rule_config["patterns"]:
+                    findings.extend(self._apply_regex_pattern(
+                        file_path, lines, pattern, rule_id, rule_config
+                    ))
+                    
+            applicable_rules = self.filter_applicable_rules(rules, file_path)
+            for rule in applicable_rules:
+                if hasattr(rule, 'rule_type') and rule.rule_type.value == 'regex':
+                    for pattern in rule.patterns:
+                        findings.extend(self._apply_rule_regex_pattern(
+                            file_path, lines, pattern, rule
+                        ))
+        except Exception as e:
+            self.logger.warning(f"Erro na análise regex de {file_path}: {e}")
+        
+        return findings
+    
+    def _apply_regex_pattern(self, file_path: str, lines: List[str], pattern: str, rule_id: str, rule_config: Dict) -> List[Finding]:
+        """Aplica um padrão regex específico"""
+        
+        fidings = []
+        
+        try:
+            compiled_pattern = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
             
+            for line_num, line in enumerate(lines, 1):
+                matches = compiled_pattern.finditer(line)
+                for match in matches:
+                    finding = Finding(
+                        file_path=file_path,
+                        line_number=line_num,
+                        rule_id=rule_id,
+                        severity=rule_config["severity"],
+                        message=rule_config["message"],
+                        code_snippet=line.strip(),
+                        category=rule_config.get("category", "unknown"),
+                        column = match.start() + 1
+                    )                
+                    fidings.append(finding)
+        except re.error as e:
+            self.logger.warning(f"Erro no padrão regex '{pattern}': {e}")
+        except Exception as e:
+            self.logger.warning(f"Erro ao aplicar regex: {e}")
+            
+        return fidings
+    
+    def _apply_rule_regex_pattern(self, file_path: str, lines: List[str], pattern: str, rule) -> List[Finding]:
+        """Aplica padrão regex de uma regra específica"""
+        findings = []
+        
+        try:
+            flags = re.IGNORECASE if not rule.case_sensitive else 0
+            if rule.multiline:
+                flags != re.MULTILINE # type: ignore
+                
+            compiled_pattern = re.compile(pattern, flags)
+            
+            for line_num, line in enumerate(lines, 1):
+                matches = compiled_pattern.finditer(line)
+                for match in matches:
+                    finding = Finding(
+                        file_path=file_path,
+                        line_number=line_num,
+                        rule_id=rule.id,
+                        severity=rule.severity,
+                        message=rule.description,
+                        code_snippet=line.strip(),
+                        category=rule.category.value if hasattr(rule.category, 'value') else str(rule.category),
+                        column=match.start() + 1,
+                        confidence=rule.confidence_threshold
+                    )
+                    findings.append(finding)
+        except Exception as e:
+            self.logger.warning(f"Erro ao aplicar a regra regex {rule.id}: {e}")
+            
+        return findings
+    
+    def _analyze_with_ast(self, file_path: str, content: str, rules: List) -> List[Finding]:
+        """Executa a análisa baseada em AST"""
+        
+        findings = []
+        
+        try:
+            
+            # Parse do código Python para AST
+            tree = ast.parse(content, filename=file_path)
+            
+            # Cria o visitor
+            visitor = PythonASTVisitor(file_path, content)
+            
+            # Percorre a ávore AST
+            visitor.visit(tree)
+            
+            # Coleta findings do visitor
+            findings.extend(visitor.findings)
+            
+        except SyntaxError as e:
+            self.logger.warning(f"Erro de sintaxe em {file_path}: {e}")
+            
+            syntax_finding = Finding(
+                file_path=file_path,
+                line_number=getattr(e, 'lineno', 1),
+                rule_id="SYNTAX_ERROR",
+                severity=Severity.LOW,
+                message=f"Erro de sintaxe impede análise AST: {e.msg}",
+                category="syntax"
+            )
+            findings.append(syntax_finding)
+            
+        except Exception as e:
+            self.logger.error(f"Erro na análise AST de {file_path}: {e}")
+        
+        return findings
+    
+    def _remove_duplicate_findings(self, findings: List[Finding]) -> List[Finding]:
+        """Remove findings duplicados baseado em linha e rule_id"""
+        seen = set()
+        unique_findings = []
+        
+        for finding in findings:
+            key = (finding.file_path, finding.line_number, finding.rule_id)
+            if key not in seen:
+                seen.add(key)
+                unique_findings.append(finding)
+            else:
+                self.logger.debug(f"Finding duplicado removido: {key}")
+        
+        return unique_findings
+    
+    def validate_config(self, config: Any) -> Dict[str, Any]:
+        """Valida configurações específicas do PythonAnalyzer"""
+        validation = super().validate_config(config)
+        warnings = validation["warnings"]
+        
+        # Validações específicas para Python
+        max_ast_depth = getattr(config, 'python_max_ast_depth', 100)
+        if max_ast_depth < 10:
+            warnings.append("python_max_ast_depth muito baixo, pode afetar detecção")
+        elif max_ast_depth > 500:
+            warnings.append("python_max_ast_depth muito alto, pode causar lentidão")
+        
+        validation["warnings"] = warnings
+        return validation
