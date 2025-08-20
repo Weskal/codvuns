@@ -41,6 +41,8 @@ reports/*.json
 reports/*.csv
 config/local_settings.py
 .env
+.projects/
+
 
 #for now
 docs/*md

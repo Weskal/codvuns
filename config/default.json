@@ -1,0 +1,68 @@
+{
+  "analysis": {
+    "max_file_size_mb": 10.0,
+    "max_depth": 10,
+    "timeout_seconds": 300,
+    "parallel_analysis": true,
+    "max_workers": 4
+  },
+  "reports": {
+    "default_format": "console",
+    "include_code_snippets": true,
+    "max_snippet_lines": 5,
+    "show_file_stats": true,
+    "color_output": true
+  },
+  "rules": {
+    "enabled_severities": [
+      "CRITICAL",
+      "HIGH",
+      "MEDIUM",
+      "LOW"
+    ],
+    "disabled_rules": [],
+    "custom_rules_path": null,
+    "min_confidence": 0.7
+  },
+  "exclusions": {
+    "directories": [
+      "__pycache__",
+      ".git",
+      ".svn",
+      "node_modules",
+      ".idea",
+      ".vscode",
+      "venv",
+      "env",
+      ".env",
+      "build",
+      "dist",
+      ".pytest_cache",
+      "target",
+      ".gradle",
+      "cmake-build-debug",
+      "cmake-build-release"
+    ],
+    "file_patterns": [
+      "*.pyc",
+      "*.pyo",
+      "*.log",
+      "*.tmp",
+      "*.bak",
+      "*.swp",
+      "*.swo",
+      "*.DS_Store",
+      "Thumbs.db"
+    ],
+    "extensions": [
+      ".min.js",
+      ".min.css",
+      ".map"
+    ]
+  },
+  "cli": {
+    "verbose": false,
+    "quiet": false,
+    "progress_bar": true
+  }
+}

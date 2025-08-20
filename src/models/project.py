@@ -144,9 +144,7 @@ class Project:
         # Define extensões padrão se não especificadas
         if not self.included_extensions:
             self.included_extensions = {
-                '.py', '.js', '.ts', '.jsx', '.tsx', '.java', 
-                '.cpp', '.c', '.h', '.hpp', '.php', '.rb', 
-                '.go', '.rs', '.cs'
+                '.py', '.pyw'
             }
     
     @property

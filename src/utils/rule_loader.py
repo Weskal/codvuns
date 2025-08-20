@@ -33,7 +33,7 @@ class RuleLoader:
         print("📦 Carregando regras padrão do JSON...")
         
         # Localiza arquivo de regras padrão
-        default_rules_file = self.base_path / "example_rules.json"
+        default_rules_file = self.base_path / "vulnerability_rules.json"
         
         if not default_rules_file.exists():
             print(f"⚠️  Arquivo de regras padrão não encontrado: {default_rules_file}")
@@ -254,7 +254,7 @@ class RuleLoader:
         all_rules.extend(self.load_builtin_rules())
         
         # Regras de arquivos
-        all_rules.extend(self.load_rules_from_directory())
+        # all_rules.extend(self.load_rules_from_directory())
         
         # Organiza por categoria
         by_category = {}
@@ -297,7 +297,7 @@ def get_default_rule_engine() -> RuleEngine:
 
 def save_default_rules_to_files():
     """Salva regras padrão em arquivos para referência"""
-    print("💾 As regras padrão já estão em src/rules/example_rules.json")
+    print("💾 As regras padrão já estão em src/rules/vulnerability_rules.json")
     print("✅ Para criar novas regras, edite esse arquivo ou crie novos .json na pasta rules/")
     
     loader = RuleLoader()

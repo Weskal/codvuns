@@ -94,7 +94,7 @@ class BaseAnalyzer(ABC):
                 applicable_rules.append(rule)
                 
             else:
-                for rule_lang in rule.targe_languages:
+                for rule_lang in rule.target_languages:
                     if rule_lang in supported_languages:
                         applicable_rules.append(rule)
                         break

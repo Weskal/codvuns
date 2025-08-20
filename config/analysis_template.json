@@ -1,0 +1,10 @@
+{
+  "project_name": "exemplo",
+  "target_languages": [
+    "python"
+  ],
+  "excluded_paths": [],
+  "custom_rules": [],
+  "analysis_overrides": {},
+  "report_preferences": {}
+}

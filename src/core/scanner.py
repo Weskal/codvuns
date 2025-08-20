@@ -7,11 +7,16 @@ import time
 import logging
 
 # Imports dos componentes do sistema
-from ..models.finding import Finding
-from ..models.project import Project
-from ..models.report import Report
-from ..utils.scoring import SecurityScoreCalculator
-from ..utils.rule_loader import RuleLoader
+# from ..models.finding import Finding
+# from ..models.project import Project
+# from ..models.report import Report
+# from ..utils.scoring import SecurityScoreCalculator
+# from ..utils.rule_loader import RuleLoader
+from src.models.finding import Finding
+from src.models.project import Project
+from src.models.report import Report
+from src.utils.scoring import SecurityScoreCalculator
+from src.utils.rule_loader import RuleLoader
 from .project_detector import ProjectDetector
 
 @dataclass
@@ -183,18 +188,18 @@ class Scanner:
         
         # Escolha do analisador baseada na linguagem principal
         if project.primary_language == ProjectLanguage.PYTHON:
-            # Import dinâmico para evitar dependência circular
-        #     try:
-        #         from ..analyzers.python_analyzer import PythonAnalyzer
-        #         return PythonAnalyzer()
-        #     except ImportError:
-        #         self.logger.warning("PythonAnalyzer não encontrado, usando analyzer básico")
-        #         return self._get_basic_analyzer()
-        
-        # else:
-        #     self.logger.warning(f"Linguagem {project.primary_language.value} não suportada")
-        #     return self._get_basic_analyzer()
-            pass
+            #Import dinâmico para evitar dependência circular
+            # try:
+            try:
+                from ..analyzers.python_analyzer import PythonAnalyzer
+                return PythonAnalyzer()
+            # except ImportError:
+            # self.logger.warning("PythonAnalyzer não encontrado, usando analyzer básico")
+            # return self._get_basic_analyzer()
+            except Exception as e:
+                self.logger.warning(f"Linguagem {project.primary_language.value} não suportada")
+                
+
         
         ## Remover comentários quando o analisador python for criado
         

@@ -351,4 +351,4 @@ def create_engine_with_default_rules() -> RuleEngine:
     engine.load_builtin_rules()
     return engine
 
-engine = create_engine_with_default_rules()
+#engine = create_engine_with_default_rules()
