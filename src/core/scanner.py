@@ -188,8 +188,7 @@ class Scanner:
         
         # Escolha do analisador baseada na linguagem principal
         if project.primary_language == ProjectLanguage.PYTHON:
-            #Import dinâmico para evitar dependência circular
-            # try:
+           
             try:
                 from ..analyzers.python_analyzer import PythonAnalyzer
                 return PythonAnalyzer()

@@ -224,7 +224,7 @@ class PythonASTVisitor(ast.NodeVisitor):
                                     finding = Finding(
                                         file_path=self.file_path,
                                         line_number=line_number,
-                                        rule_id="HARDCODED_SECRET_001",
+                                        rule_id="HARDCODED_SECRETS_001",
                                         severity=Severity.HIGH,
                                         message=f"Possível hardcoded secret na variável '{var_name}'",
                                         code_snippet=line_content,
@@ -590,18 +590,57 @@ class PythonAnalyzer(BaseAnalyzer):
         
         return findings
     
+    # def _remove_duplicate_findings(self, findings: List[Finding]) -> List[Finding]:
+    #     """Remove findings duplicados baseado em linha e rule_id"""
+    #     seen = set()
+    #     unique_findings = []
+        
+    #     for finding in findings:
+    #         key = (finding.file_path, finding.line_number, finding.rule_id)
+    #         if key not in seen:
+    #             seen.add(key)
+    #             unique_findings.append(finding)
+    #         else:
+    #             self.logger.debug(f"Finding duplicado removido: {key}")
+        
+    #     return unique_findings
+    
     def _remove_duplicate_findings(self, findings: List[Finding]) -> List[Finding]:
-        """Remove findings duplicados baseado em linha e rule_id"""
-        seen = set()
+        """Remove findings duplicados, priorizando AST sobre Regex"""
+        seen_locations = {}
         unique_findings = []
         
+        # Prioridade: AST > Regex interno > Regex de regras
+        priority_order = {
+            'AST': 1,      # Findings de AST (ex: DANGEROUS_FUNCTION_EVAL)
+            'REGEX': 2,    # Regex internos (ex: SQL_INJECTION_REGEX)  
+            'RULE': 3      # Regex de regras (ex: HARDCODED_SECRETS_001)
+        }
+        
+        # Primeiro, categoriza findings por tipo
         for finding in findings:
-            key = (finding.file_path, finding.line_number, finding.rule_id)
-            if key not in seen:
-                seen.add(key)
-                unique_findings.append(finding)
+            location_key = (finding.file_path, finding.line_number)
+            
+            # Determina o tipo baseado no rule_id
+            if finding.rule_id.startswith('DANGEROUS_FUNCTION_') or finding.rule_id.endswith('_AST'):
+                finding_type = 'AST'
+            elif finding.rule_id.endswith('_REGEX'):
+                finding_type = 'REGEX' 
             else:
-                self.logger.debug(f"Finding duplicado removido: {key}")
+                finding_type = 'RULE'
+            
+            # Se location não existe ou finding atual tem prioridade maior
+            if (location_key not in seen_locations or 
+                priority_order[finding_type] < priority_order[seen_locations[location_key][1]]):
+                seen_locations[location_key] = (finding, finding_type)
+        
+        # Coleta os findings únicos
+        for finding, _ in seen_locations.values():
+            unique_findings.append(finding)
+        
+        removed_count = len(findings) - len(unique_findings)
+        if removed_count > 0:
+            self.logger.debug(f"{removed_count} findings duplicados removidos por localização")
         
         return unique_findings
     

@@ -176,7 +176,7 @@ class Rule:
 
 
 class RuleEngine:
-    """Engine para gerenciar regras - SEM lógica de carregamento duplicada"""
+    """Engine para gerenciar regras"""
     
     def __init__(self):
         self.rules: Dict[str, Rule] = {}

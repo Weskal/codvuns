@@ -149,7 +149,7 @@ class ProjectDetector:
             score = 0
             for indicator in indicators:
                 if '*' in indicator:
-                    # Padrão glob (ex: *.csproj)
+                 
                     pattern = indicator.replace('*', '')
                     matching_files = list(project_path.glob(f"**/*{pattern}"))
                     score += len(matching_files) * 2
@@ -206,7 +206,7 @@ class ProjectDetector:
         """
         language_counts = {}
         
-        # Lista algumas extensões comuns para amostragem rápida
+        # Algumas extensões comuns 
         sample_extensions = ['.py', '.js', '.ts', '.java', '.cpp', '.c', '.php', '.rb', '.go', '.rs', '.cs']
         
         for ext in sample_extensions:
@@ -233,16 +233,6 @@ class ProjectDetector:
             project.add_excluded_path('node_modules')
             project.add_excluded_path('dist')
             project.add_excluded_path('build')
-        
-        elif primary_language == ProjectLanguage.JAVA:
-            project.add_excluded_path('target')
-            project.add_excluded_path('build')
-            project.add_excluded_path('.gradle')
-        
-        elif primary_language == ProjectLanguage.CPP or primary_language == ProjectLanguage.C:
-            project.add_excluded_path('build')
-            project.add_excluded_path('cmake-build-debug')
-            project.add_excluded_path('cmake-build-release')
     
     def is_valid_project(self, path: str) -> bool:
         """

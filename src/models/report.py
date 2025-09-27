@@ -12,7 +12,7 @@ class ReportFormat(Enum):
     """Formatos de saída suportados para relatórios"""
     CONSOLE = "console"
     JSON = "json" 
-    HTML = "html"
+    #HTML = "html"
     CSV = "csv"
 
 

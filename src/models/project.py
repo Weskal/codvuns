@@ -216,6 +216,10 @@ class Project:
         if file_path.suffix.lower() not in self.included_extensions:
             return False
         
+        excluded_files = {'__init__.py', 'actors.py'}
+        if file_path.name in excluded_files:
+            return False
+        
         # Verifica caminhos excluídos
         if self._is_excluded_path(file_path):
             return False
@@ -236,7 +240,7 @@ class Project:
         default_exclusions = {
             '__pycache__', '.git', '.svn', 'node_modules', 
             '.idea', '.vscode', 'venv', 'env', '.env',
-            'build', 'dist', '.pytest_cache'
+            'build', 'dist', '.pytest_cache', 'tests'
         }
         
         # Verifica se alguma parte do caminho está nas exclusões

@@ -79,9 +79,11 @@ class SecurityScoreCalculator:
             return "Código limpo - sem vulnerabilidades"
         if score >= 90:
             return "Excelente - código minimamente vulnerável"
-        elif score >= 75:
-            return "Bom - código precisa de revisão de segurança"
-        elif score < 50 and score >= 25:
+        elif score >= 70:
+            return "Bom - código levemente vulnerável"
+        elif score >= 50:
+            return "Regular - código precisa de revisão de segurança"
+        elif score >= 20:
             return "Ruim - é necessário um refatoramento do código e medidas de segurança à serem tomadas"
         else:
-            return "Crítico!!!"
+            return "Péssimo - Crítico!!! Busque alterar as pendências antes do seu projeto ser afetado!"

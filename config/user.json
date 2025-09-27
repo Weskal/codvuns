@@ -1,0 +1,7 @@
+{
+  "exclusions": {
+    "directories": [
+      "core/"
+    ]
+  }
+}

@@ -8,9 +8,9 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 # Imports que seriam do projeto real
-from src.analyzers.python_analyzer import PythonAnalyzer, PythonASTVisitor
-from src.models.finding import Finding, Severity
-from src.models.rule import Rule, RuleType, VulnerabilityCategory, RuleMetadata
+from ...src.analyzers.python_analyzer import PythonAnalyzer, PythonASTVisitor
+from ...src.models.finding import Finding, Severity
+from ...src.models.rule import Rule, RuleType, VulnerabilityCategory, RuleMetadata
 
 
 class TestPythonASTVisitor(unittest.TestCase):

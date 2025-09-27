@@ -77,16 +77,19 @@ def print_security_score(score: float):
     status_text = SecurityScoreCalculator.get_score_classification(score)
     
     # Escolhe cor baseada no score
-    if score >= 90:
+    if score == 100:
         color = "green"
         emoji = "🟢"
-    elif score >= 75:
-        color = "yellow" 
-        emoji = "🟡"
+    elif score >= 90:
+        color = "blue" 
+        emoji = "🔵"
+    elif score >= 70:
+        color = "purple"
+        emoji = "🟣"
     elif score >= 50:
         color = "orange1"
         emoji = "🟠"
-    elif score >= 25:
+    elif score >= 20:
         color = "red"
         emoji = "🔴"
     else:
@@ -138,11 +141,11 @@ def print_top_findings(findings, limit=10):
     sorted_findings = sorted(findings, key=lambda f: severity_order[f.severity])
     
     findings_table = Table(show_header=True, header_style="bold magenta", box=box.ROUNDED)
-    findings_table.add_column("Sev", width=8)
+    findings_table.add_column("Severidade", width=15)
     findings_table.add_column("Arquivo", style="cyan", width=25)
     findings_table.add_column("Linha", justify="center", width=6)
-    findings_table.add_column("Regra", style="dim", width=20)
-    findings_table.add_column("Descrição", width=35)
+    findings_table.add_column("Regra", style="dim", width=25)
+    findings_table.add_column("Descrição", width=50)
     
     for finding in sorted_findings[:limit]:
         # Formata caminho do arquivo (só nome + diretório pai)
@@ -160,7 +163,7 @@ def print_top_findings(findings, limit=10):
             message
         )
     
-    title = f"🔍 Top {limit} Vulnerabilidades" + (f" (de {len(findings)} total)" if len(findings) > limit else "")
+    title = f"Top {limit} Vulnerabilidades" + (f" (de {len(findings)} total)" if len(findings) > limit else "")
     console.print(Panel(findings_table, title=title, border_style="yellow"))
 
 def save_report_to_file(report, output_path: str, format_type: str, target_path: str = ""):
@@ -202,8 +205,9 @@ def save_report_to_file(report, output_path: str, format_type: str, target_path:
         elif format_type.lower() == 'csv':
             # Implementação básica CSV
             import csv
-            with open(output_path, 'w', newline='', encoding='utf-8') as f:
+            with open(output_path, 'w', newline='', encoding='utf-8-sig') as f:
                 writer = csv.writer(f)
+                
                 # Header com informações do projeto
                 if target_path:
                     writer.writerow([f'# Relatório CODVUNS - Projeto: {Path(target_path).name}'])
@@ -263,7 +267,8 @@ def cli(ctx):
 @click.option('--verbose', '-v', is_flag=True, help='Saída detalhada')
 @click.option('--quiet', '-q', is_flag=True, help='Saída mínima (apenas resumo)')
 @click.option('--max-findings', default=10, help='Máximo de vulnerabilidades detalhadas a exibir')
-def scan(target, language, format, output, verbose, quiet, max_findings):
+@click.option('--excluded-paths', help='Caminhos a excluir (separados por vírgula)')
+def scan(target, language, format, output, verbose, quiet, max_findings, excluded_paths):
     """🔍 Executa análise de vulnerabilidades em um projeto"""
     
     if not quiet:
@@ -274,6 +279,15 @@ def scan(target, language, format, output, verbose, quiet, max_findings):
         # Configura scanner
         config_manager = ConfigManager()
         scanner = Scanner(config_manager)
+        
+        # No main.py, na função scan():
+        project = scanner.detect_project(target)
+
+        # Adicione exclusões manuais após detectar
+        if excluded_paths:
+            excluded_list = [path.strip() for path in excluded_paths.split(',')]
+            for path in excluded_list:
+                project.add_excluded_path(path)
         
         # Mostra progresso
         with Progress(
